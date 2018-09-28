@@ -309,6 +309,7 @@ func (s *LoginServer) handleSelectCharacter(conn msconn.IConn, reader *maplepack
 		return nil
 	}
 
+	// TODO: Register channel server to login server
 	conn.Send(packets.LoginMigrateClient([]byte{192, 168, 1, 240}, int16(8686), charID))
 	return nil
 }
