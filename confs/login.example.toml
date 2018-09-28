@@ -1,0 +1,8 @@
+log-level = "debug"
+listen-clients = ":8888"
+[data-source]
+ip = "10.100.156.210"
+port = 3306
+username = "root"
+password = "password#dbr"
+database = "mptest"

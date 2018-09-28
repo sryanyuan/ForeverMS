@@ -13,6 +13,18 @@
     },
     "tasks": [
         {
+            "taskName": "build_ForeverMS",
+            "suppressTaskName": true,
+            "isBuildCommand": true,
+            "args": [
+                "tasks",
+                "${workspaceRoot}/../../../../",
+                "${workspaceRoot}",
+                "build"
+            ],
+            "isBackground": false
+        },
+        {
             "taskName": "build",
             "isBuildCommand": true,
 			"suppressTaskName": true,
