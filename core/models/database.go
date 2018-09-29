@@ -35,9 +35,9 @@ func InitGlobalDB(dsn *DataSourceConfig) error {
 	if nil != err {
 		return errors.Trace(err)
 	}
-	if err = globalDB.Ping(); nil != err {
+	/*if err = globalDB.Ping(); nil != err {
 		return errors.Trace(err)
-	}
+	}*/
 	return nil
 }
 

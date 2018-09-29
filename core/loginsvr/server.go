@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sryanyuan/ForeverMS/core/consts"
+	"github.com/sryanyuan/ForeverMS/core/consts/opcode"
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
@@ -60,6 +61,19 @@ func (s *LoginServer) Serve(ctx *gosync.Context) error {
 	if err = models.InitGlobalDB(&s.config.DataSource); nil != err {
 		return errors.Trace(err)
 	}
+	// Init opcodes
+	if err = opcode.LoadRecvOpsFromFile(s.config.RecvOps); nil != err {
+		log.Errorf("Load recv opcodes error: %v", err)
+		return errors.Trace(err)
+	}
+	if err = opcode.LoadSendOpsFromFile(s.config.SendOps); nil != err {
+		log.Errorf("Load send opcodes error: %v", err)
+		return errors.Trace(err)
+	}
+	log.Debugf("Recv ops: %v", opcode.RecvOps)
+	log.Debugf("Send ops: %v", opcode.SendOps)
+
+	// Start serving
 	s.initPacketDispatchMap()
 	s.syncCtx = ctx
 	// Accept new client connections until cancel

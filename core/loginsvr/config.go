@@ -10,6 +10,8 @@ type Config struct {
 	LogLevel      string                  `toml:"log-level"`
 	ListenClients string                  `toml:"listen-clients"`
 	DataSource    models.DataSourceConfig `toml:"data-source"`
+	SendOps       string                  `toml:"send-ops"`
+	RecvOps       string                  `toml:"recv-ops"`
 }
 
 func (c *Config) LoadFromFile(f string) error {
