@@ -83,7 +83,7 @@ func (s *LoginServer) newClientCipher(skip int) cipher.ICipher {
 	// Client cipher must be set
 	var iv [4]byte
 	rand.Read(iv[:])
-	return cipher.NewDefaultCipher(consts.ServerVersion, iv, skip)
+	return cipher.NewDefaultCipher(consts.ServerVersion, iv, true, skip)
 }
 
 func (s *LoginServer) acceptClients() {

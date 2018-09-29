@@ -26,6 +26,7 @@ func (s *LoginServer) handleConnEvent(evt *msconn.ConnEvent) error {
 }
 
 func (s *LoginServer) handleEvtConnected(evt *msconn.ConnEvent) error {
+	// Once connected, send handshake response
 	return nil
 }
 
