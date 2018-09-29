@@ -1,6 +1,8 @@
 package loginsvr
 
-import "github.com/sryanyuan/ForeverMS/core/msconn"
+import (
+	"github.com/sryanyuan/ForeverMS/core/msconn"
+)
 
 type loginConn struct {
 	*msconn.Conn

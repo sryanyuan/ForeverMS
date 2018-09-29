@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/ngaut/log"
+	"github.com/sryanyuan/ForeverMS/core/cipher"
 	"github.com/sryanyuan/ForeverMS/core/maplepacket"
 )
 
@@ -23,7 +24,6 @@ const (
 )
 
 type ConnOptions struct {
-	Encrypt    bool
 	HeaderSize int
 }
 
@@ -44,6 +44,9 @@ type IConn interface {
 
 	GetString(string) string
 	SetString(string, string)
+
+	GetRecvCipher() cipher.ICipher
+	GetSendCipher() cipher.ICipher
 }
 
 type ConnEvent struct {
@@ -58,12 +61,19 @@ type Conn struct {
 	outQ    chan<- *ConnEvent
 	status  int64
 	options *ConnOptions
+	// Encrypt and decrypt
+	cipherSend cipher.ICipher
+	cipherRecv cipher.ICipher
 	// Get and set userdata
 	intKvs    map[string]int
 	stringKvs map[string]string
 }
 
-func NewConn(conn net.Conn, outQ chan *ConnEvent, options *ConnOptions) *Conn {
+func NewConn(conn net.Conn,
+	outQ chan *ConnEvent,
+	options *ConnOptions,
+	recvCipher cipher.ICipher,
+	sendCipher cipher.ICipher) *Conn {
 	c := &Conn{
 		conn:      conn,
 		inQ:       make(chan maplepacket.Packet, defaultInQSize),
@@ -78,6 +88,7 @@ func NewConn(conn net.Conn, outQ chan *ConnEvent, options *ConnOptions) *Conn {
 	return c
 }
 
+// Run -
 func (c *Conn) Run() {
 	if !atomic.CompareAndSwapInt64(&c.status, csNone, csRunning) {
 		return
@@ -86,6 +97,7 @@ func (c *Conn) Run() {
 	go c.writeLoop()
 }
 
+// Close -
 func (c *Conn) Close() {
 	if !atomic.CompareAndSwapInt64(&c.status, csRunning, csDisconnected) {
 		return
@@ -114,10 +126,22 @@ func (c *Conn) GetString(k string) string {
 	return v
 }
 
+// SetString -
 func (c *Conn) SetString(k string, v string) {
 	c.stringKvs[k] = v
 }
 
+// GetRecvCipher -
+func (c *Conn) GetRecvCipher() cipher.ICipher {
+	return c.cipherRecv
+}
+
+// GetSendCipher -
+func (c *Conn) GetSendCipher() cipher.ICipher {
+	return c.cipherSend
+}
+
+// First reading header (packet size), then the body (packet size - header size)
 func (c *Conn) readLoop() {
 	// Notify connected event
 	c.outQ <- &ConnEvent{
@@ -152,9 +176,10 @@ func (c *Conn) readLoop() {
 
 		if header {
 			// Read body size
-			if c.options.Encrypt {
-				readSize = maplepacket.GetPacketLength(body)
+			if nil != c.cipherRecv {
+				readSize = c.cipherRecv.DecryptHeader(body)
 			} else {
+				// Decode as little endian int32
 				p := maplepacket.NewPacket()
 				p.Append(body)
 				r := maplepacket.NewReader(&p)
@@ -163,6 +188,7 @@ func (c *Conn) readLoop() {
 		} else {
 			// Body part, decode and dispatch
 			p := maplepacket.NewPacket()
+			// TODO: Decrypt body data
 			p.Append(body)
 			readSize = c.options.HeaderSize
 			c.outQ <- &ConnEvent{
@@ -185,6 +211,10 @@ func (c *Conn) writeLoop() {
 				}
 				dsize := len(data)
 				for dsize > 0 {
+					// Do encryption if need
+					if nil != c.cipherSend {
+						c.cipherSend.Encrypt(data)
+					}
 					if n, err := c.conn.Write(data); nil != err {
 						log.Errorf("Connection %s read loop break, error: %v",
 							c.conn.RemoteAddr().String(), err)

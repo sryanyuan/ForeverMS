@@ -1,13 +1,17 @@
 package loginsvr
 
 import (
+	"crypto/rand"
 	"net"
 	"strings"
 	"sync/atomic"
 	"time"
 
+	"github.com/sryanyuan/ForeverMS/core/consts"
+
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"github.com/sryanyuan/ForeverMS/core/cipher"
 	"github.com/sryanyuan/ForeverMS/core/gosync"
 	"github.com/sryanyuan/ForeverMS/core/models"
 	"github.com/sryanyuan/ForeverMS/core/msconn"
@@ -75,6 +79,13 @@ func (s *LoginServer) Stop() {
 	s.listener.Close()
 }
 
+func (s *LoginServer) newClientCipher(skip int) cipher.ICipher {
+	// Client cipher must be set
+	var iv [4]byte
+	rand.Read(iv[:])
+	return cipher.NewDefaultCipher(consts.ServerVersion, iv, skip)
+}
+
 func (s *LoginServer) acceptClients() {
 	s.syncCtx.Add(1)
 	defer func() {
@@ -114,10 +125,15 @@ func (s *LoginServer) acceptClients() {
 			return
 		}
 		// Once get the validate connection, do the login logic
-		newConn := msconn.NewConn(conn, s.eventQ, &msconn.ConnOptions{})
+		newConn := msconn.NewConn(conn,
+			s.eventQ,
+			&msconn.ConnOptions{},
+			s.newClientCipher(0),
+			s.newClientCipher(1))
 		lConn := &loginConn{
 			Conn: newConn,
 		}
+		// Handle conns events
 		lConn.Run()
 		log.Infof("New connection comes, remote address: %s",
 			conn.RemoteAddr().String())
