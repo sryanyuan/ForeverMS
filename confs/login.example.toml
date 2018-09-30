@@ -1,5 +1,5 @@
 log-level = "debug"
-listen-clients = ":8888"
+listen-clients = ":8484"
 send-ops = "confs/sendopsv79.properties"
 recv-ops = "confs/recvopsv79.properties"
 [data-source]

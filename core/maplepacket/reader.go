@@ -44,6 +44,11 @@ func (r *Reader) ReadInt32() int32 {
 	return r.packet.readInt32(&r.pos)
 }
 
+// ReadInt -
+func (r *Reader) ReadInt() int {
+	return int(r.packet.readInt32(&r.pos))
+}
+
 // ReadInt64 -
 func (r *Reader) ReadInt64() int64 {
 	return r.packet.readInt64(&r.pos)

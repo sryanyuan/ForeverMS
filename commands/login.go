@@ -7,7 +7,7 @@ import (
 	"github.com/ngaut/log"
 	"github.com/spf13/cobra"
 	"github.com/sryanyuan/ForeverMS/core/gosync"
-	"github.com/sryanyuan/ForeverMS/core/loginsvr"
+	"github.com/sryanyuan/ForeverMS/core/server/login"
 )
 
 type loginCommandOptions struct {
@@ -17,13 +17,13 @@ type loginCommandOptions struct {
 func executeLoginCommand(cmd *cobra.Command, options *loginCommandOptions) {
 	var err error
 	// Parse config file
-	var config loginsvr.Config
+	var config login.Config
 	if err = config.LoadFromFile(options.config); nil != err {
 		log.Errorf("Load config from file [%s] error: %v",
 			options.config, err)
 		return
 	}
-	server := loginsvr.NewLoginServer(&config)
+	server := login.NewLoginServer(&config)
 	ctx := gosync.NewContextWithCancel()
 	if err = server.Serve(ctx); nil != err {
 		log.Errorf("Login server serve error: %v",

@@ -1,21 +1,19 @@
-package loginsvr
+package login
 
 import (
 	"crypto/rand"
 	"net"
-	"strings"
 	"sync/atomic"
-	"time"
 
 	"github.com/sryanyuan/ForeverMS/core/consts"
 	"github.com/sryanyuan/ForeverMS/core/consts/opcode"
+	"github.com/sryanyuan/ForeverMS/core/netio"
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 	"github.com/sryanyuan/ForeverMS/core/cipher"
 	"github.com/sryanyuan/ForeverMS/core/gosync"
 	"github.com/sryanyuan/ForeverMS/core/models"
-	"github.com/sryanyuan/ForeverMS/core/msconn"
 )
 
 const (
@@ -31,9 +29,9 @@ type LoginServer struct {
 	listener net.Listener
 	syncCtx  *gosync.Context
 
-	eventQ chan *msconn.ConnEvent
+	eventQ chan *netio.ConnEvent
 
-	packetDispatchMap map[int]packetHandler
+	packetDispatchMap map[int16]packetHandler
 }
 
 func NewLoginServer(cfg *Config) *LoginServer {
@@ -41,8 +39,8 @@ func NewLoginServer(cfg *Config) *LoginServer {
 	log.Debug(cfg)
 	return &LoginServer{
 		config:            cfg,
-		eventQ:            make(chan *msconn.ConnEvent, 5120),
-		packetDispatchMap: make(map[int]packetHandler),
+		eventQ:            make(chan *netio.ConnEvent, 5120),
+		packetDispatchMap: make(map[int16]packetHandler),
 	}
 }
 
@@ -103,11 +101,26 @@ func (s *LoginServer) newClientCipher(skip int) cipher.ICipher {
 func (s *LoginServer) acceptClients() {
 	s.syncCtx.Add(1)
 	defer func() {
+		s.Stop()
 		log.Infof("acceptClients exit")
 		s.syncCtx.Done()
 	}()
 
-	var err error
+	if err := netio.AcceptClient(s.listener, func(conn net.Conn) (netio.IConn, error) {
+		newConn := netio.NewConn(conn,
+			s.eventQ,
+			&netio.ConnOptions{},
+			s.newClientCipher(0),
+			s.newClientCipher(1))
+		lConn := &loginConn{
+			Conn: newConn,
+		}
+		return lConn, nil
+	}); nil != err {
+		log.Errorf("Accept client error: %v", err)
+	}
+
+	/*var err error
 	var conn net.Conn
 	// After accept temporary failure, enter sleep and try again
 	var tempDelay time.Duration
@@ -139,9 +152,9 @@ func (s *LoginServer) acceptClients() {
 			return
 		}
 		// Once get the validate connection, do the login logic
-		newConn := msconn.NewConn(conn,
+		newConn := netio.NewConn(conn,
 			s.eventQ,
-			&msconn.ConnOptions{},
+			&netio.ConnOptions{},
 			s.newClientCipher(0),
 			s.newClientCipher(1))
 		lConn := &loginConn{
@@ -151,7 +164,7 @@ func (s *LoginServer) acceptClients() {
 		lConn.Run()
 		log.Infof("New connection comes, remote address: %s",
 			conn.RemoteAddr().String())
-	}
+	}*/
 }
 
 func (s *LoginServer) handleConnEvents() {
@@ -169,8 +182,10 @@ func (s *LoginServer) handleConnEvents() {
 					return
 				}
 				if err := s.handleConnEvent(evt); nil != err {
-					log.Errorf("Handle login events error: %v",
-						err)
+					log.Errorf("Handle login events error: %v, client: %v",
+						err, evt.Conn.GetRemoteAddress())
+					// If error occurs, disconnect the client
+					evt.Conn.Close()
 				}
 			}
 		case <-s.syncCtx.Cancelled():

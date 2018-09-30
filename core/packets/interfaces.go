@@ -1,6 +1,6 @@
 package packets
 
-import "github.com/sryanyuan/ForeverMS/core/msconn"
+import "github.com/sryanyuan/ForeverMS/core/netio"
 
 type posInter interface {
 	SetX(int16)
@@ -36,5 +36,5 @@ type mobInter interface {
 	npcInter
 	GetFlySpeed() int32
 	//GetSummoner() *connection.Channel
-	GetSummoner() msconn.IConn
+	GetSummoner() netio.IConn
 }

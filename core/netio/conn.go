@@ -1,4 +1,4 @@
-package msconn
+package netio
 
 import (
 	"io"
@@ -47,6 +47,8 @@ type IConn interface {
 
 	GetRecvCipher() cipher.ICipher
 	GetSendCipher() cipher.ICipher
+
+	GetRemoteAddress() string
 }
 
 type ConnEvent struct {
@@ -139,6 +141,11 @@ func (c *Conn) GetRecvCipher() cipher.ICipher {
 // GetSendCipher -
 func (c *Conn) GetSendCipher() cipher.ICipher {
 	return c.cipherSend
+}
+
+// GetRemoteAddress -
+func (c *Conn) GetRemoteAddress() string {
+	return c.conn.RemoteAddr().String()
 }
 
 // First reading header (packet size), then the body (packet size - header size)

@@ -12,6 +12,15 @@ func NewPacket() Packet {
 	return make(Packet, 0)
 }
 
+// NewPacketWithOp -
+func NewPacketWithOp(op int16) Packet {
+	p := make(Packet, 0, 32)
+	// Header length
+	p.WriteInt32(0)
+	p.WriteInt16(op)
+	return p
+}
+
 // Append -
 func (p *Packet) Append(data []byte) {
 	*p = append(*p, data...)
@@ -83,6 +92,9 @@ func (p *Packet) WriteInt16(data int16) { p.WriteUint16(uint16(data)) }
 
 // WriteInt32 -
 func (p *Packet) WriteInt32(data int32) { p.WriteUint32(uint32(data)) }
+
+// WriteInt -
+func (p *Packet) WriteInt(data int) { p.WriteUint32(uint32(data)) }
 
 // WriteInt64 -
 func (p *Packet) WriteInt64(data int64) { p.WriteUint64(uint64(data)) }
