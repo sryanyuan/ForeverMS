@@ -3,9 +3,7 @@ package channel
 import (
 	"time"
 
-	"github.com/juju/errors"
 	"github.com/sryanyuan/ForeverMS/core/maplepacket"
-	"github.com/sryanyuan/ForeverMS/core/models"
 	"github.com/sryanyuan/ForeverMS/core/netio"
 )
 
@@ -26,32 +24,34 @@ func (s *ChannelServer) handlePong(conn netio.IConn, reader *maplepacket.Reader)
 }
 
 func (s *ChannelServer) handlePlayerLoggedIn(conn netio.IConn, reader *maplepacket.Reader) error {
-	cc := must2chanConn(conn)
+	/*cc := must2chanConn(conn)
 
 	charID := reader.ReadInt()
 	// TODO: Read connection status from redis/Mysql, current just pass
 	if cc.loginStatus == loginStatusLoggedIn {
 		return nil
-	}
+	}*/
 
 	// Read character data from DB
-	var err error
-	if cc.charModel, err = models.SelectCharacterByCharacterID(int32(charID)); nil != err {
-		return errors.Trace(err)
-	}
+	//var err error
 
 	// TODO: Set the loggedIn channel status
 
 	// Add player into world
-	prevPlayer := s.world.GetPlayer(cc.charModel.ID)
+	/*prevPlayer := s.world.GetPlayer(int64(charID))
 	if nil != prevPlayer {
 		// Already logined?
 		return errors.New("Already logged in")
 	}
-	s.world.AddPlayer(&MSPlayer{
+	player := &MSPlayer{
 		chanConn: cc,
-	})
+	}
+	if err = player.LoadCharacterData(charID); nil != err {
+		return errors.Trace(err)
+	}
+	s.world.AddPlayer(player)
+	log.Infof("Player [%s] logged in", player.charModel.Name)
 	// Send character information to player
-
+	*/
 	return nil
 }

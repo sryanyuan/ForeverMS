@@ -34,7 +34,7 @@ type ChannelServer struct {
 	packetDispatchMap map[int16]packetHandler
 
 	// Game data relative
-	world *MSWorld
+	//world *MSWorld
 }
 
 func NewChannelServer(cfg *Config) *ChannelServer {
