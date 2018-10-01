@@ -182,8 +182,9 @@ func (s *LoginServer) handleConnEvents() {
 					return
 				}
 				if err := s.handleConnEvent(evt); nil != err {
-					log.Errorf("Handle login events error: %v, client: %v",
-						err, evt.Conn.GetRemoteAddress())
+					log.Errorf("Handle client: %v login events error: %v",
+						evt.Conn.GetRemoteAddress(),
+						errors.ErrorStack(err))
 					// If error occurs, disconnect the client
 					evt.Conn.Close()
 				}

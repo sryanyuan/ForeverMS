@@ -20,7 +20,8 @@ func NewDefaultCipher(version uint16, iv [4]byte, shanda bool, skip int) ICipher
 }
 
 func (c *defaultCipher) Encrypt(data []byte) {
-	if c.cur < int64(c.skip) {
+	c.cur++
+	if c.cur <= int64(c.skip) {
 		return
 	}
 	if c.shanda {
@@ -30,7 +31,6 @@ func (c *defaultCipher) Encrypt(data []byte) {
 	}
 
 	c.crypt.Shuffle()
-	c.cur++
 }
 
 func (c *defaultCipher) DecryptHeader(data []byte) int {
@@ -38,7 +38,8 @@ func (c *defaultCipher) DecryptHeader(data []byte) int {
 }
 
 func (c *defaultCipher) DecryptBody(data []byte) {
-	if c.cur < int64(c.skip) {
+	c.cur++
+	if c.cur <= int64(c.skip) {
 		return
 	}
 	if c.shanda {
@@ -48,7 +49,6 @@ func (c *defaultCipher) DecryptBody(data []byte) {
 	}
 
 	c.crypt.Shuffle()
-	c.cur++
 }
 
 func (c *defaultCipher) GetKey() []byte {

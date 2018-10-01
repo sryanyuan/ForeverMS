@@ -2,6 +2,9 @@ log-level = "debug"
 listen-clients = ":8484"
 send-ops = "confs/sendopsv79.properties"
 recv-ops = "confs/recvopsv79.properties"
+server-id = 0
+server-name = "Forever"
+max-characters-limit = 3
 [data-source]
 ip = "10.100.156.210"
 port = 3306

@@ -29,6 +29,7 @@ func (s *LoginServer) handleConnEvent(evt *netio.ConnEvent) error {
 
 func (s *LoginServer) handleEvtConnected(evt *netio.ConnEvent) error {
 	// Once connected, send handshake response
+	log.Debugf("Handshake send")
 	evt.Conn.Send(packet79.NewHello(consts.ServerVersion,
 		evt.Conn.GetSendCipher().GetKey(),
 		evt.Conn.GetRecvCipher().GetKey(),
@@ -46,8 +47,9 @@ func (s *LoginServer) handleEvtRecv(evt *netio.ConnEvent) error {
 	// Dispatch packet with opcode
 	handler, ok := s.packetDispatchMap[opcode]
 	if ok && nil != handler {
+		log.Debugf("Handle opcode %d", opcode)
 		return errors.Trace(handler(evt.Conn, &reader))
 	}
-	log.Warning("Opcode %d do not setup packet handler", opcode)
+	log.Warningf("Opcode %d do not setup packet handler", opcode)
 	return nil
 }

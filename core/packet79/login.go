@@ -25,6 +25,10 @@ func NewHello(version uint16, ivSend []byte, ivRecv []byte, testServer bool) map
 	// Fixed length: 0x0D
 	p.WriteInt16(0x0d)
 	p.WriteUint16(version)
+	// Write 2 zero
+	p.WriteByte(0)
+	p.WriteByte(0)
+
 	p.WriteBytes(ivRecv)
 	p.WriteBytes(ivSend)
 	tsV := byte(4)
@@ -77,6 +81,7 @@ func NewLoginFailed(reason int) maplepacket.Packet {
 func NewLoginSuccess(username string, accountId int, gender bool) maplepacket.Packet {
 	p := maplepacket.NewPacketWithOp(opcode.SendOps.LOGIN_STATUS)
 	p.WriteByte(0)
+	p.WriteInt(accountId)
 	p.WriteBool(gender)
 	p.WriteInt16(0)
 	p.WriteString(username)
@@ -104,6 +109,7 @@ func NewServerList(serverID byte, serverName string, chInfo []int) maplepacket.P
 	p.WriteByte(serverID)
 	p.WriteString(serverName)
 	p.WriteByte(0x03) //0: Normal 1: hot 2: very hot 3: new
+	p.WriteString(serverName)
 	p.WriteByte(0x64)
 	p.WriteByte(0x00)
 	p.WriteByte(0x64)
@@ -173,9 +179,15 @@ func addCharEntry(p *maplepacket.Packet, chr *models.Character) {
  * @param chr The character to add the stats of.
  */
 func addCharStats(p *maplepacket.Packet, chr *models.Character) {
+	// Total 98 bytes
+	// 19 bytes
 	p.WriteInt(int(chr.ID))
-	p.WriteString(chr.Name)
-	for i := len(chr.Name); i < 13; i++ {
+	name := chr.Name
+	if len(chr.Name) > 13 {
+		name = chr.Name[:13]
+	}
+	p.WriteBytes([]byte(name))
+	for i := len(name); i < 13; i++ {
 		p.WriteByte(0)
 	}
 
@@ -183,14 +195,17 @@ func addCharStats(p *maplepacket.Packet, chr *models.Character) {
 	if 0 != chr.Gender {
 		genderV = true
 	}
+	// 10 bytes
 	p.WriteBool(genderV)
 	p.WriteByte(byte(chr.SkinColor))
 	p.WriteInt(chr.Face)
 	p.WriteInt(chr.Hair)
+	// 24 bytes
 	p.WriteInt64(0)
 	p.WriteInt64(0)
 	p.WriteInt64(0)
 	p.WriteByte(byte(chr.Level))
+	// 22 bytes
 	p.WriteInt16(int16(chr.Job))
 	p.WriteInt16(int16(chr.Str))
 	p.WriteInt16(int16(chr.Dex))
@@ -202,9 +217,11 @@ func addCharStats(p *maplepacket.Packet, chr *models.Character) {
 	p.WriteInt16(int16(chr.MaxMP))
 	p.WriteInt16(int16(chr.Ap))
 	p.WriteInt16(int16(chr.Sp))
+	// 10 bytes
 	p.WriteInt(chr.Exp)
 	p.WriteInt16(int16(chr.Fame))
 	p.WriteInt(0)
+	// 13 bytes
 	p.WriteInt64(time.Now().UnixNano() / 1e6)
 	if 0 == chr.MapID {
 		p.WriteInt(10000)
@@ -228,12 +245,19 @@ func addCharLook(p *maplepacket.Packet, chr *models.Character, mega bool) {
 	if 0 != chr.Gender {
 		genderV = true
 	}
+	// 11 bytes
 	p.WriteBool(genderV)
 	p.WriteByte(byte(chr.SkinColor))
 	p.WriteInt(chr.Face)
 	p.WriteBool(!mega)
 	p.WriteInt(chr.Hair)
+
 	// TODO: Add equip here
+	p.WriteByte(0xff)
+	// TODO: Add mask equip here
+	p.WriteByte(0xff)
+	// TODO: Add weapon id here
+	p.WriteInt(0)
 
 	p.WriteInt(0)
 	p.WriteInt64(0)
@@ -285,7 +309,7 @@ func NewCharNameResponse(charName string, used bool) maplepacket.Packet {
 
 func NewAddNewCharEntry(chr *models.Character, worked bool) maplepacket.Packet {
 	p := maplepacket.NewPacketWithOp(opcode.SendOps.ADD_NEW_CHAR_ENTRY)
-	p.WriteBool(worked)
+	p.WriteBool(!worked)
 	addCharEntry(&p, chr)
 	return p
 }

@@ -1,6 +1,7 @@
 package netio
 
 import (
+	"encoding/hex"
 	"io"
 	"net"
 	"sync/atomic"
@@ -34,8 +35,12 @@ const (
 	CEDisconnected
 )
 
+type FnConnected func(IConn, chan<- *ConnEvent)
+type FnDisconnected func(IConn, chan<- *ConnEvent)
+type FnRecv func(IConn, []byte, chan<- *ConnEvent)
+
 type IConn interface {
-	Run()
+	Run(FnConnected, FnDisconnected, FnRecv)
 	Send(maplepacket.Packet)
 	Close()
 
@@ -77,12 +82,14 @@ func NewConn(conn net.Conn,
 	recvCipher cipher.ICipher,
 	sendCipher cipher.ICipher) *Conn {
 	c := &Conn{
-		conn:      conn,
-		inQ:       make(chan maplepacket.Packet, defaultInQSize),
-		outQ:      outQ,
-		options:   options,
-		intKvs:    make(map[string]int),
-		stringKvs: make(map[string]string),
+		conn:       conn,
+		inQ:        make(chan maplepacket.Packet, defaultInQSize),
+		outQ:       outQ,
+		options:    options,
+		intKvs:     make(map[string]int),
+		stringKvs:  make(map[string]string),
+		cipherRecv: recvCipher,
+		cipherSend: sendCipher,
 	}
 	if c.options.HeaderSize == 0 {
 		c.options.HeaderSize = defaultHeaderSize
@@ -91,11 +98,11 @@ func NewConn(conn net.Conn,
 }
 
 // Run -
-func (c *Conn) Run() {
+func (c *Conn) Run(connectfn FnConnected, disconnectfn FnDisconnected, recvfn FnRecv) {
 	if !atomic.CompareAndSwapInt64(&c.status, csNone, csRunning) {
 		return
 	}
-	go c.readLoop()
+	go c.readLoop(connectfn, disconnectfn, recvfn)
 	go c.writeLoop()
 }
 
@@ -149,11 +156,15 @@ func (c *Conn) GetRemoteAddress() string {
 }
 
 // First reading header (packet size), then the body (packet size - header size)
-func (c *Conn) readLoop() {
+func (c *Conn) readLoop(connectfn FnConnected, disconnectfn FnDisconnected, recvfn FnRecv) {
 	// Notify connected event
-	c.outQ <- &ConnEvent{
-		Type: CEConnected,
-		Conn: c,
+	if nil != connectfn {
+		connectfn(c, c.outQ)
+	} else {
+		c.outQ <- &ConnEvent{
+			Type: CEConnected,
+			Conn: c,
+		}
 	}
 
 	// Allocate 1KiB to receive client packets
@@ -170,13 +181,17 @@ func (c *Conn) readLoop() {
 		if nil != err {
 			log.Errorf("Connection %s read loop break, error: %v",
 				c.conn.RemoteAddr().String(), err)
-			// Close the output Q
-			close(c.outQ)
 			// Send a EOF event to outQ
-			c.outQ <- &ConnEvent{
-				Type: CEDisconnected,
-				Conn: c,
+			if nil != disconnectfn {
+				disconnectfn(c, c.outQ)
+			} else {
+				c.outQ <- &ConnEvent{
+					Type: CEDisconnected,
+					Conn: c,
+				}
 			}
+			// Close the input Q
+			close(c.inQ)
 			return
 		}
 		body := readBuf[0:readSize]
@@ -195,13 +210,19 @@ func (c *Conn) readLoop() {
 		} else {
 			// Body part, decode and dispatch
 			p := maplepacket.NewPacket()
-			// TODO: Decrypt body data
+			if nil != c.cipherRecv {
+				c.cipherRecv.DecryptBody(body)
+			}
 			p.Append(body)
 			readSize = c.options.HeaderSize
-			c.outQ <- &ConnEvent{
-				Packet: p,
-				Type:   CERecv,
-				Conn:   c,
+			if nil != recvfn {
+				recvfn(c, p, c.outQ)
+			} else {
+				c.outQ <- &ConnEvent{
+					Packet: p,
+					Type:   CERecv,
+					Conn:   c,
+				}
 			}
 		}
 		header = !header
@@ -214,17 +235,20 @@ func (c *Conn) writeLoop() {
 		case data, ok := <-c.inQ:
 			{
 				if !ok {
+					log.Errorf("Connection %s write loop break due to read loop done",
+						c.GetRemoteAddress())
 					return
 				}
 				dsize := len(data)
 				for dsize > 0 {
 					// Do encryption if need
+					log.Debugf("Send: %s", hex.EncodeToString(data))
 					if nil != c.cipherSend {
 						c.cipherSend.Encrypt(data)
 					}
 					if n, err := c.conn.Write(data); nil != err {
-						log.Errorf("Connection %s read loop break, error: %v",
-							c.conn.RemoteAddr().String(), err)
+						log.Errorf("Connection %s write loop break, error: %v",
+							c.GetRemoteAddress(), err)
 						return
 					} else {
 						dsize -= n

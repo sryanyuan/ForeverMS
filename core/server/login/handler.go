@@ -9,6 +9,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 	"github.com/sryanyuan/ForeverMS/core/maplepacket"
+	"github.com/sryanyuan/ForeverMS/core/mockmodels"
 	"github.com/sryanyuan/ForeverMS/core/models"
 	"github.com/sryanyuan/ForeverMS/core/netio"
 	"github.com/sryanyuan/ForeverMS/core/packet79"
@@ -53,7 +54,7 @@ func (s *LoginServer) handleLoginPassword(conn netio.IConn, reader *maplepacket.
 	logRes := LoginResUnFind
 
 	var account *models.Account
-	account, err = models.SelectAccountForLogin(username)
+	account, err = mockmodels.SelectAccountForLogin(username)
 	if nil != err {
 		return errors.Trace(err)
 	}
@@ -104,11 +105,12 @@ func (s *LoginServer) handleLoginPassword(conn netio.IConn, reader *maplepacket.
 	}
 
 	// Login ok
+	logRes = LoginResSuccess
 	lc.loginStatus = loginStatusLoggedIn
 	lc.accountID = int(account.ID)
 	lc.gender = account.Gender
 	lc.isGM = account.GM != 0
-	models.UpdateAccountSetLoggedIn(username, true)
+	mockmodels.UpdateAccountSetLoggedIn(username, true)
 
 	return nil
 }
@@ -133,9 +135,9 @@ func (s *LoginServer) handleCharlistRequest(conn netio.IConn, reader *maplepacke
 	lc.worldID = worldID
 	lc.channelID = channelID
 	log.Debugf("User %s request charlist with worldID %d, channelID %d",
-		worldID, channelID)
+		lc.username, worldID, channelID)
 	// Get characters from DB
-	chars, err := models.SelectCharacterByAccountIDWorldID(int32(lc.accountID), int32(worldID))
+	chars, err := mockmodels.SelectCharacterByAccountIDWorldID(int32(lc.accountID), int32(worldID))
 	if nil != err {
 		return errors.Trace(err)
 	}
@@ -183,7 +185,7 @@ func (s *LoginServer) handleSetGender(conn netio.IConn, reader *maplepacket.Read
 
 func (s *LoginServer) handleCheckCharName(conn netio.IConn, reader *maplepacket.Reader) error {
 	charName := reader.ReadStringInt16()
-	count, err := models.SelectCharacterNameCount(charName)
+	count, err := mockmodels.SelectCharacterNameCount(charName)
 	if nil != err {
 		return errors.Trace(err)
 	}
@@ -251,8 +253,10 @@ func (s *LoginServer) handleCreateChar(conn netio.IConn, reader *maplepacket.Rea
 		newChar.Job = 2000
 	}
 
-	if _, err := models.InsertCharacter(&newChar); nil != err {
+	if charID, err := mockmodels.InsertCharacter(&newChar); nil != err {
 		return errors.Trace(err)
+	} else {
+		newChar.ID = charID
 	}
 	// Send success response
 	conn.Send(packet79.NewAddNewCharEntry(&newChar, true))

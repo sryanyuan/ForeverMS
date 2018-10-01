@@ -56,7 +56,27 @@ func AcceptClient(listener net.Listener, acceptFn AcceptClientFn) error {
 			continue
 		}
 		// Handle conns events
-		newConn.Run()
+		newConn.Run(
+			func(conn IConn, ch chan<- *ConnEvent) {
+				ch <- &ConnEvent{
+					Type: CEConnected,
+					Conn: newConn,
+				}
+			},
+			func(conn IConn, ch chan<- *ConnEvent) {
+				ch <- &ConnEvent{
+					Type: CEDisconnected,
+					Conn: newConn,
+				}
+			},
+			func(conn IConn, data []byte, ch chan<- *ConnEvent) {
+				ch <- &ConnEvent{
+					Packet: data,
+					Type:   CERecv,
+					Conn:   newConn,
+				}
+			},
+		)
 		log.Infof("New connection comes, remote address: %s",
 			conn.RemoteAddr().String())
 	}
