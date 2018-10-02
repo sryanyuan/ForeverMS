@@ -1,0 +1,4 @@
+log-level = "debug"
+listen-clients = ":7575"
+send-ops = "confs/sendopsv79.properties"
+recv-ops = "confs/recvopsv79.properties"

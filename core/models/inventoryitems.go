@@ -47,6 +47,32 @@ type CharacterInventoryItem struct {
 	InventoryEquipment
 }
 
+func SelectCharacterInventoryItemIDsAndPositionByInventoryType(charID int64, inventoryType int) ([]*InventoryItem, error) {
+	rows, err := GetGlobalDB().Query(`SELECT
+	itemid,
+	position,
+	FROM
+	inventoryitems WHERE
+	characterid = ? AND
+	inventorytype = ?`,
+		charID, inventoryType)
+	if nil != err {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	res := make([]*InventoryItem, 0, 32)
+	for rows.Next() {
+		var item InventoryItem
+		if err = rows.Scan(&item); nil != err {
+			return nil, errors.Trace(err)
+		}
+		res = append(res, &item)
+	}
+
+	return res, nil
+}
+
 func SelectCharacterInventoryItem(charID int64) ([]*CharacterInventoryItem, error) {
 	rows, err := GetGlobalDB().Query(`SELECT
 	inventoryitems.inventoryitemid,
@@ -129,6 +155,7 @@ func SelectCharacterInventoryItem(charID int64) ([]*CharacterInventoryItem, erro
 		); nil != err {
 			return nil, errors.Trace(err)
 		}
+		item.InventoryItem.CharacterID = charID
 		res = append(res, &item)
 	}
 	return res, nil

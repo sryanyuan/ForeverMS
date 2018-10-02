@@ -147,14 +147,18 @@ func NewEndOfServerList() maplepacket.Packet {
  * @param serverId The ID of the server requested.
  * @return The character list packet.
  */
-func NewCharlist(charlist []*models.Character, maxCharacterLimit int) maplepacket.Packet {
+func NewCharlist(charlist []*models.Character, equips [][]*models.InventoryItem, maxCharacterLimit int) maplepacket.Packet {
 	p := maplepacket.NewPacketWithOp(opcode.SendOps.CHARLIST)
 	p.WriteByte(0)
 	p.WriteInt(0)
 	p.WriteByte(byte(len(charlist)))
 	if nil != charlist {
-		for _, chr := range charlist {
-			addCharEntry(&p, chr)
+		for i, chr := range charlist {
+			var items []*models.InventoryItem
+			if i < len(equips) {
+				items = equips[i]
+			}
+			addCharEntry(&p, chr, items)
 		}
 	}
 	p.WriteInt16(3)
@@ -162,9 +166,9 @@ func NewCharlist(charlist []*models.Character, maxCharacterLimit int) maplepacke
 	return p
 }
 
-func addCharEntry(p *maplepacket.Packet, chr *models.Character) {
+func addCharEntry(p *maplepacket.Packet, chr *models.Character, equips []*models.InventoryItem) {
 	addCharStats(p, chr)
-	addCharLook(p, chr, false)
+	addCharLook(p, chr, equips, false)
 	p.WriteByte(0)
 	if chr.Job == consts.MapleJobs.GM {
 		p.WriteByte(0x02)
@@ -240,7 +244,7 @@ func addCharStats(p *maplepacket.Packet, chr *models.Character) {
  * @param chr The character to add the looks of.
  * @param mega Unknown
  */
-func addCharLook(p *maplepacket.Packet, chr *models.Character, mega bool) {
+func addCharLook(p *maplepacket.Packet, chr *models.Character, equips []*models.InventoryItem, mega bool) {
 	genderV := false
 	if 0 != chr.Gender {
 		genderV = true
@@ -252,12 +256,51 @@ func addCharLook(p *maplepacket.Packet, chr *models.Character, mega bool) {
 	p.WriteBool(!mega)
 	p.WriteInt(chr.Hair)
 
-	// TODO: Add equip here
+	myEquip := make(map[int]int)
+	maskedEquip := make(map[int]int)
+	if nil != equips {
+		for _, equip := range equips {
+			pos := equip.Position
+			_, exists := myEquip[pos]
+			if equip.Position > 0x9c && !exists {
+				myEquip[pos] = equip.ItemID
+			} else if (pos < 0x9c || pos == 128) && pos != 0x91 {
+				pos -= 100
+				if _, ok := myEquip[pos]; ok {
+					maskedEquip[pos] = myEquip[pos]
+				}
+				myEquip[pos] = equip.ItemID
+			} else {
+				if _, ok := myEquip[pos]; ok {
+					maskedEquip[pos] = myEquip[pos]
+				}
+			}
+		}
+	}
+
+	// Add equip here
+	for k, v := range myEquip {
+		p.WriteByte(byte(256 - k))
+		p.WriteInt(v)
+	}
 	p.WriteByte(0xff)
-	// TODO: Add mask equip here
+	// Add mask equip here
+	for k, v := range maskedEquip {
+		p.WriteByte(byte(256 - k))
+		p.WriteInt(v)
+	}
 	p.WriteByte(0xff)
 	// TODO: Add weapon id here
-	p.WriteInt(0)
+	var weaponID int
+	if nil != equips {
+		for _, v := range equips {
+			if v.Position == 145 {
+				weaponID = v.ItemID
+				break
+			}
+		}
+	}
+	p.WriteInt(weaponID)
 
 	p.WriteInt(0)
 	p.WriteInt64(0)
@@ -307,10 +350,10 @@ func NewCharNameResponse(charName string, used bool) maplepacket.Packet {
 	return p
 }
 
-func NewAddNewCharEntry(chr *models.Character, worked bool) maplepacket.Packet {
+func NewAddNewCharEntry(chr *models.Character, equips []*models.InventoryItem, worked bool) maplepacket.Packet {
 	p := maplepacket.NewPacketWithOp(opcode.SendOps.ADD_NEW_CHAR_ENTRY)
 	p.WriteBool(!worked)
-	addCharEntry(&p, chr)
+	addCharEntry(&p, chr, equips)
 	return p
 }
 

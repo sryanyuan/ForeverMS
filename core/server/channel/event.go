@@ -48,6 +48,6 @@ func (s *ChannelServer) handleEvtRecv(evt *netio.ConnEvent) error {
 	if ok && nil != handler {
 		return errors.Trace(handler(evt.Conn, &reader))
 	}
-	log.Warning("Opcode %d do not setup packet handler", opcode)
+	log.Warningf("Opcode %d do not setup packet handler", opcode)
 	return nil
 }

@@ -141,7 +141,8 @@ func (s *LoginServer) handleCharlistRequest(conn netio.IConn, reader *maplepacke
 	if nil != err {
 		return errors.Trace(err)
 	}
-	conn.Send(packet79.NewCharlist(chars, s.config.MaxCharactersLimit))
+	// TODO: Get character equips
+	conn.Send(packet79.NewCharlist(chars, nil, s.config.MaxCharactersLimit))
 
 	return nil
 }
@@ -258,8 +259,56 @@ func (s *LoginServer) handleCreateChar(conn netio.IConn, reader *maplepacket.Rea
 	} else {
 		newChar.ID = charID
 	}
+
+	// TODO: Add equip into equipped inventory
+	equips := []*models.CharacterInventoryItem{
+		&models.CharacterInventoryItem{
+			InventoryItem: models.InventoryItem{
+				ItemID:   top,
+				Position: 0xf8,
+			},
+			InventoryEquipment: models.InventoryEquipment{
+				WDef:         3,
+				UpgradeSlots: 7,
+			},
+		},
+		&models.CharacterInventoryItem{
+			InventoryItem: models.InventoryItem{
+				ItemID:   bottom,
+				Position: 0xfa,
+			},
+			InventoryEquipment: models.InventoryEquipment{
+				WDef:         2,
+				UpgradeSlots: 7,
+			},
+		},
+		&models.CharacterInventoryItem{
+			InventoryItem: models.InventoryItem{
+				ItemID:   shoes,
+				Position: 0xf9,
+			},
+			InventoryEquipment: models.InventoryEquipment{
+				WDef:         2,
+				UpgradeSlots: 7,
+			},
+		},
+		&models.CharacterInventoryItem{
+			InventoryItem: models.InventoryItem{
+				ItemID:   weapon,
+				Position: 0xf5,
+			},
+			InventoryEquipment: models.InventoryEquipment{
+				WAtk:         15,
+				UpgradeSlots: 7,
+			},
+		},
+	}
+	items := make([]*models.InventoryItem, 0, 4)
+	for _, v := range equips {
+		items = append(items, &v.InventoryItem)
+	}
 	// Send success response
-	conn.Send(packet79.NewAddNewCharEntry(&newChar, true))
+	conn.Send(packet79.NewAddNewCharEntry(&newChar, items, true))
 
 	return nil
 }
