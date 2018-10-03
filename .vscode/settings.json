@@ -1,3 +1,4 @@
 {
-    "go.gopath": "${workspaceRoot}/../../../../"
+    "go.gopath": "${workspaceRoot}/../../../../",
+    "go.formatTool": "gofmt"
 }

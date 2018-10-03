@@ -28,7 +28,7 @@ type localStatInfo struct {
 	MaxBasedDamage int
 }
 
-type MSPlayer struct {
+type Player struct {
 	netio.IConn
 	charModel *models.Character
 	// Inventorys
@@ -37,14 +37,14 @@ type MSPlayer struct {
 	localStat localStatInfo
 }
 
-func NewMSPlayer(conn netio.IConn) *MSPlayer {
-	player := &MSPlayer{
+func NewPlayer(conn netio.IConn) *Player {
+	player := &Player{
 		IConn: conn,
 	}
 	return player
 }
 
-func (p *MSPlayer) LoadCharacterData(charID int) error {
+func (p *Player) LoadCharacterData(charID int) error {
 	var err error
 	p.charModel, err = models.SelectCharacterByCharacterID(int32(charID))
 	if nil != err {
@@ -82,11 +82,11 @@ func (p *MSPlayer) LoadCharacterData(charID int) error {
 	return nil
 }
 
-func (p *MSPlayer) getInventory(typ int) *inventory.Inventory {
+func (p *Player) getInventory(typ int) *inventory.Inventory {
 	return p.inventorys[typ]
 }
 
-func (p *MSPlayer) loadInventorys() error {
+func (p *Player) loadInventorys() error {
 	// Load inventorys
 	p.inventorys = make([]*inventory.Inventory, consts.InventoryType.Total)
 	p.inventorys[consts.InventoryType.Equip] = inventory.NewInventory(consts.InventoryType.Equip, p.charModel.EquipSlots)
@@ -144,46 +144,46 @@ func (p *MSPlayer) loadInventorys() error {
 }
 
 // TODO: load quest
-func (p *MSPlayer) loadQuestStatus() error {
+func (p *Player) loadQuestStatus() error {
 	return nil
 }
 
 // TODO: load kills
-func (p *MSPlayer) loadSkills() error {
+func (p *Player) loadSkills() error {
 	return nil
 }
 
 // TODO: load kills macros
-func (p *MSPlayer) loadSkillMacros() error {
+func (p *Player) loadSkillMacros() error {
 	return nil
 }
 
 // TODO: load key map
-func (p *MSPlayer) loadKeyMap() error {
+func (p *Player) loadKeyMap() error {
 	return nil
 }
 
 // TODO: load saved locations
-func (p *MSPlayer) loadSavedLocations() error {
+func (p *Player) loadSavedLocations() error {
 	return nil
 }
 
 // TODO: load fame log
-func (p *MSPlayer) loadFameLog() error {
+func (p *Player) loadFameLog() error {
 	return nil
 }
 
 // TODO: load char ares info
-func (p *MSPlayer) loadCharAresInfo() error {
+func (p *Player) loadCharAresInfo() error {
 	return nil
 }
 
 // TODO: load achievements
-func (p *MSPlayer) loadAchievements() error {
+func (p *Player) loadAchievements() error {
 	return nil
 }
 
-func (p *MSPlayer) updateLocalStats() {
+func (p *Player) updateLocalStats() {
 	oldMaxHP := p.localStat.MaxHP
 	p.localStat.MaxHP = p.charModel.MaxHP
 	p.localStat.MaxMP = p.charModel.MaxMP
@@ -244,6 +244,6 @@ func (p *MSPlayer) updateLocalStats() {
 }
 
 // TODO:
-func (p *MSPlayer) UpdatePartyMemberHP() {
+func (p *Player) UpdatePartyMemberHP() {
 
 }

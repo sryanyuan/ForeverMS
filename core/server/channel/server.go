@@ -10,6 +10,7 @@ import (
 	"github.com/sryanyuan/ForeverMS/core/cipher"
 	"github.com/sryanyuan/ForeverMS/core/consts"
 	"github.com/sryanyuan/ForeverMS/core/consts/opcode"
+	"github.com/sryanyuan/ForeverMS/core/game/world"
 	"github.com/sryanyuan/ForeverMS/core/gosync"
 	"github.com/sryanyuan/ForeverMS/core/models"
 	"github.com/sryanyuan/ForeverMS/core/netio"
@@ -34,7 +35,7 @@ type ChannelServer struct {
 	packetDispatchMap map[int16]packetHandler
 
 	// Game data relative
-	//world *MSWorld
+	world *world.World
 }
 
 func NewChannelServer(cfg *Config) *ChannelServer {
@@ -44,6 +45,7 @@ func NewChannelServer(cfg *Config) *ChannelServer {
 		config:            cfg,
 		eventQ:            make(chan *netio.ConnEvent, 5120),
 		packetDispatchMap: make(map[int16]packetHandler),
+		world:             world.NewWorld(),
 	}
 }
 

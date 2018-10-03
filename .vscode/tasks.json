@@ -13,14 +13,28 @@
     },
     "tasks": [
         {
-            "taskName": "build_ForeverMS",
+            "taskName": "build_ForeverMS_login",
             "suppressTaskName": true,
             "isBuildCommand": true,
             "args": [
                 "tasks",
                 "${workspaceRoot}/../../../../",
                 "${workspaceRoot}",
-                "build"
+                "build",
+                "loginserver.exe"
+            ],
+            "isBackground": false
+        },
+        {
+            "taskName": "build_ForeverMS_channel",
+            "suppressTaskName": true,
+            "isBuildCommand": true,
+            "args": [
+                "tasks",
+                "${workspaceRoot}/../../../../",
+                "${workspaceRoot}",
+                "build",
+                "channelserver.exe"
             ],
             "isBackground": false
         },

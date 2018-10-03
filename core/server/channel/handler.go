@@ -24,13 +24,13 @@ func (s *ChannelServer) handlePong(conn netio.IConn, reader *maplepacket.Reader)
 }
 
 func (s *ChannelServer) handlePlayerLoggedIn(conn netio.IConn, reader *maplepacket.Reader) error {
-	/*cc := must2chanConn(conn)
+	cc := must2chanConn(conn)
 
 	charID := reader.ReadInt()
 	// TODO: Read connection status from redis/Mysql, current just pass
 	if cc.loginStatus == loginStatusLoggedIn {
 		return nil
-	}*/
+	}
 
 	// Read character data from DB
 	//var err error
@@ -38,7 +38,7 @@ func (s *ChannelServer) handlePlayerLoggedIn(conn netio.IConn, reader *maplepack
 	// TODO: Set the loggedIn channel status
 
 	// Add player into world
-	/*prevPlayer := s.world.GetPlayer(int64(charID))
+	prevPlayer := s.world.GetPlayer(int64(charID))
 	if nil != prevPlayer {
 		// Already logined?
 		return errors.New("Already logged in")
@@ -52,6 +52,6 @@ func (s *ChannelServer) handlePlayerLoggedIn(conn netio.IConn, reader *maplepack
 	s.world.AddPlayer(player)
 	log.Infof("Player [%s] logged in", player.charModel.Name)
 	// Send character information to player
-	*/
+
 	return nil
 }

@@ -46,6 +46,7 @@ func (s *ChannelServer) handleEvtRecv(evt *netio.ConnEvent) error {
 	// Dispatch packet with opcode
 	handler, ok := s.packetDispatchMap[opcode]
 	if ok && nil != handler {
+		log.Debugf("Handle opcode 0x%04x", opcode)
 		return errors.Trace(handler(evt.Conn, &reader))
 	}
 	log.Warningf("Opcode %d do not setup packet handler", opcode)
